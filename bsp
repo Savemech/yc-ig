@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+export DEBIAN_FRONTEND=noninteractive
+df -h
+# # cat <<EOF | tee /etc/apt/sources.list 
+# # deb http://archive.ubuntu.com/ubuntu/ bionic main restricted
+# # deb http://archive.ubuntu.com/ubuntu/ bionic-updates main restricted
+# # deb http://archive.ubuntu.com/ubuntu/ bionic universe
+# # deb http://archive.ubuntu.com/ubuntu/ bionic-updates universe
+# # deb http://archive.ubuntu.com/ubuntu/ bionic multiverse
+# # deb http://archive.ubuntu.com/ubuntu/ bionic-updates multiverse
+# # deb http://archive.ubuntu.com/ubuntu/ bionic-backports main restricted universe multiverse
+# # deb http://security.ubuntu.com/ubuntu/ bionic-security main restricted
+# # deb http://security.ubuntu.com/ubuntu/ bionic-security universe
+# # deb http://security.ubuntu.com/ubuntu/ bionic-security multiverse
+# # EOF
+# cat <<EOF | tee /etc/apt/apt.conf.d/99999apt-assumptions.conf
+# APT::Get::Assume-Yes "true";
+# APT::Get::force-yes "true";
+# EOF
+# env
+# dpkg -l
+# ls -alhR /usr/share/aptitude/ || true
+# ls -alhR /etc/apt/ || true
+# ls -alhR ~/.aptitude* || true
+# ls -alhR ~/.aptitude/* || true
+apt-get update && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y cloud-init
+apt-get dist-upgrade -y
+apt-get update
+apt-get install -y curl net-tools wget git htop tmux vim ca-certificates ncdu
+#ifconfig -a
+#df -h
+#bash -c "curl https://get.docker.com | bash"
+#systemctl enable docker && systemctl start docker
+#apt install -y python3-pip python3
+apt-get install -y python-pip python
+pip install simple_http_server Werkzeug
+cat <<EOF | tee /server.py
+#!/usr/bin/env python
+
+import SimpleHTTPServer
+import SocketServer
+
+PORT = 8080
+
+
+class GetHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+
+    def do_GET(self):
+        self.send_head()
+        for h in self.headers:
+            self.send_header(h, self.headers[h])
+        self.end_headers()
+        self.send_response(200, "")
+
+
+Handler = GetHandler
+httpd = SocketServer.TCPServer(("", PORT), Handler)
+
+httpd.serve_forever()
+EOF
+chmod 755 /server.py
+cat <<EOF | tee /etc/systemd/system/python-server.service
+[Unit]
+Description=running my fancy python server
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+ExecStart=/server.py
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=hello
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable python-server.service
+systemctl start python-server.service
+sed -i '/swapfile                                 none            swap    sw              0       0/d' /etc/fstab

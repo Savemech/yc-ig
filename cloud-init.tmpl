@@ -1,0 +1,45 @@
+#cloud-config
+version: "key"
+# users:
+#   - name: user1
+#     sudo: ALL=(ALL) NOPASSWD:ALL
+#     shell: /bin/bash
+#     ssh-authorized-keys:
+#       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO+2YlmByT8s2ZgPzBkESFnNunNo+VExRsemltSDwd+U
+#       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDIuRM9w9khSHxckwc1+wkb2B2AkXGOxGiCXrD7OmGl8LxzGxyEBjJGROP8ADe71vqfQNMpZbdJnNKoKjPB5rdZN5gf829zjwu2yGOSASlXW/3smdtQvqm+jkHYqwe/AnpIi3UNasEEh6IE1gnN62n8DKIdHHtORIkRvz/sLxfRKh2IWT73TWObKgDJRYLxLplJ8L1mJuTRFuEc21iCNM2hcdLmVK6XeM7PBUCciScmC9dhwKblo4dllUS8on/mm8/iA2Hcag0N8qz6eRYgYY95bdvzjA8STF0hV4HUyLDutvoBx/a+ilsLfc+52ROf5BhEHCNNvQCL0fsRE5f5g2t/ujyz+sjoJA/wu0sJnWVBmZluQ8WBbtA5F8xxFxzZ/d41gPddeyquzWsE0xN/qovELebzss703HPO+reB4rzJA2jitagTWgDtIVwWvM9SRPy2+yiAgc/spi9+yLTcjRJTo75NOd8aoIJpz3HKtxmK7m5cNbuRhiNITVUVQx/ttYhBGYspphQn/75uBkzw3Eo/qZ8qwbtesuHSCr8cHzrZ8HCANHBgk5tC1OIlaCLw7yJZmPRBHUQTO34bPIq3Dveygv2yFd2AoXWKLue2XKTRuN9GuRmT0asTvednC7zhs+ptk/TrUb2TdTVVKa9aLTQlmyPoLdS7JQrCFSqK4ZVY4Q==      
+#   - name: user2
+#     sudo: ALL=(ALL) NOPASSWD:ALL
+#     shell: /bin/bash
+#     ssh-authorized-keys:
+#       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO+2YlmByT8s2ZgPzBkESFnNunNo+VExRsemltSDwd+U
+#       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDIuRM9w9khSHxckwc1+wkb2B2AkXGOxGiCXrD7OmGl8LxzGxyEBjJGROP8ADe71vqfQNMpZbdJnNKoKjPB5rdZN5gf829zjwu2yGOSASlXW/3smdtQvqm+jkHYqwe/AnpIi3UNasEEh6IE1gnN62n8DKIdHHtORIkRvz/sLxfRKh2IWT73TWObKgDJRYLxLplJ8L1mJuTRFuEc21iCNM2hcdLmVK6XeM7PBUCciScmC9dhwKblo4dllUS8on/mm8/iA2Hcag0N8qz6eRYgYY95bdvzjA8STF0hV4HUyLDutvoBx/a+ilsLfc+52ROf5BhEHCNNvQCL0fsRE5f5g2t/ujyz+sjoJA/wu0sJnWVBmZluQ8WBbtA5F8xxFxzZ/d41gPddeyquzWsE0xN/qovELebzss703HPO+reB4rzJA2jitagTWgDtIVwWvM9SRPy2+yiAgc/spi9+yLTcjRJTo75NOd8aoIJpz3HKtxmK7m5cNbuRhiNITVUVQx/ttYhBGYspphQn/75uBkzw3Eo/qZ8qwbtesuHSCr8cHzrZ8HCANHBgk5tC1OIlaCLw7yJZmPRBHUQTO34bPIq3Dveygv2yFd2AoXWKLue2XKTRuN9GuRmT0asTvednC7zhs+ptk/TrUb2TdTVVKa9aLTQlmyPoLdS7JQrCFSqK4ZVY4Q==
+write_files:
+  - content: |
+          network:
+              version: 2
+              ethernets:
+                  eth0:
+                      mtu: 1450
+                      set-name: eth0
+    path: /etc/netplan/999-cloud-init-qrator.yaml
+    permissions: '0644'
+  - content: |
+        [Unit]
+        Description=Force systemd to not set MTU size
+        Before=network.target
+        
+        [Service]
+        #ExecStart=/opt/bin/set-mtu.sh
+        ExecStart=/bin/sh -c "ip link set eth0 mtu 1450"
+        Type=oneshot
+        
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/set-mtu.service
+    permissions: '0644'
+    
+runcmd:
+  - [ systemctl, enable set-mtu ]
+  - [ systemctl, status set-mtu ]
+  - [ systemctl, start set-mtu ]
+  - [ netplan, apply ]

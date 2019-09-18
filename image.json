@@ -1,0 +1,32 @@
+{
+    "variables": {
+        "name": "{{env `IMAGE_NAME`}}"
+  },
+    "provisioners": [
+        {
+            "execute_command": "{{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+            "scripts": "./bsp",
+            "type": "shell"
+        }
+    ],
+    "builders": [
+        {
+            "ssh_username": "ubuntu",
+            "disk_type": "network-nvme",
+            "use_ipv4_nat": true,
+            "subnet_id": "...",
+            "source_image_family": "ubuntu-1804",
+            "image_description": "...",
+            "image_family": "ubuntu-1804",
+            "image_name": "{{user `name`}}",
+	    "disk_size_gb": "10",
+	    "instance_cores": "8",
+	    "instance_mem_gb": "8",
+	    "platform_id": "standard-v2",
+            "zone": "ru-central1-a",
+            "folder_id": "...",
+            "token": "...",
+            "type": "yandex"
+        }
+    ]
+}
