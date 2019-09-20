@@ -23,6 +23,7 @@ export IMAGE_FAMILY=ubuntu-1804
 export PACKER_APPNAME=dwno
 export PACKER_BUILDTIME=$(date +%Y-%m-%d--%H-%M)
 export IMAGE_NAME=${IMAGE_FAMILY}-${PACKER_APPNAME}-${PACKER_BUILDTIME}
+
 ```
 
 Build image:
@@ -32,6 +33,7 @@ packer build -machine-readable image.json | tee output
 export TF_VAR_packer_buildtime=${PACKER_BUILDTIME}
 export TF_VAR_image_id=$(grep -e "yandex,artifact,0,id," output | cut -d"," -f6)
 export TF_VAR_image_name=${IMAGE_NAME}
+
 ```
 
 
