@@ -37,7 +37,7 @@ export TF_VAR_image_name=${IMAGE_NAME}
 ```
 
 
-
+This terraform code perform following actions: 
 Create/Update:
 * Create [Service account](https://cloud.yandex.com/docs/iam/concepts/users/service-accounts)
 * Create [VPC](https://cloud.yandex.com/docs/vpc/concepts/)
@@ -55,12 +55,6 @@ Now to the target group part
 yc compute ig  --id $(tf output -json | jq -r '.[]| .value') list-instances --format json | jq -r '.[].network_interfaces  | .[].primary_v4_address  | .address'
 ```
 
-```
-cat terraform.tfstate | jq -r '.modules[0].resources | map(select(.type == "google_compute_instance")) | map([.primary.id, " ansible_ssh_host=", .primary.attributes["network_interface.0.access_config.0.nat_ip"]] | join("")) | sort | .[]'
-```
-
-
-
 Terraform part
 
 Watch out, and you need sane defaults for this block, in my case for testing, is OK to some application unavailability
@@ -74,3 +68,6 @@ Watch out, and you need sane defaults for this block, in my case for testing, is
   }
 ```
 
+```bash
+terraform apply -auto-approve -parallelism=50
+```
