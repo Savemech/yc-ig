@@ -87,11 +87,14 @@ resource "yandex_compute_instance_group" "appname-ig" {
       port = "8080"
       path = "/"
     }
-
-
-
-
   }
+  load_balancer {
+    target_group_labels = {
+      service = "appname"
+    }
+    target_group_name = "appname"
+  }
+
 
 
   depends_on = ["yandex_resourcemanager_folder_iam_binding.appname-ig-role-iam-binding", "yandex_iam_service_account.appname-ig-sa"]
@@ -101,31 +104,36 @@ output "ig-id" {
   value = yandex_compute_instance_group.appname-ig.id
 }
 
-
-
-
-# resource "yandex_lb_target_group" "appname-tg" {
-#   name      = "appname-tg"
-#   region_id = "${var.zones}"
-
-#   target {
-#     subnet_id = "${yandex_vpc_subnet.subnet.*.id}"
-#     address   = "${yandex_compute_instance_group.appname-ig.network_interface.0.ip_address}"
-#   }
-
-#   # target {
-#   #   subnet_id = "${yandex_vpc_subnet.my-subnet.id}"
-#   #   address   = "${yandex_compute_instance.my-instance-2.network_interface.0.ip_address}"
-#   # }
-
-#   # target {
-#   #   subnet_id = "${yandex_vpc_subnet.my-subnet.id}"
-#   #   address   = "${yandex_compute_instance.my-instance-2.network_interface.0.ip_address}"
-#   # }
+# output "listener-address" {
+#   value = yandex_lb_network_load_balancer.appname-lb.listener
+#   #yandex_lb_network_load_balancer.appname-lb.listener.*.external_address_spec.address
+#   #yandex_lb_network_load_balancer.appname-lb.listener.*.address
 # }
 
 
 
+resource "yandex_lb_network_load_balancer" "appname-lb" {
+  name = "appname-lb-${lower(random_id.getrandom.hex)}"
+
+  listener {
+    name = "appname-listener-8080-${lower(random_id.getrandom.hex)}"
+    port = 8080
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+
+  }
 
 
+  attached_target_group {
+    target_group_id = "${yandex_compute_instance_group.appname-ig.load_balancer.0.target_group_id}"
 
+    healthcheck {
+      name = "http"
+      http_options {
+        port = 8080
+        path = "/"
+      }
+    }
+  }
+}
