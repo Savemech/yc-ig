@@ -25,7 +25,7 @@ export PACKER_BUILDTIME=$(date +%Y-%m-%d--%H-%M)
 export IMAGE_NAME=${IMAGE_FAMILY}-${PACKER_APPNAME}-${PACKER_BUILDTIME}
 
 ```
-##Packer part
+## Packer part
 Build image:
 ```bash
 packer build -machine-readable image.json | tee output
@@ -55,7 +55,7 @@ Now to the target group part
 yc compute ig  --id $(tf output -json | jq -r '.[]| .value') list-instances --format json | jq -r '.[].network_interfaces  | .[].primary_v4_address  | .address'
 ```
 
-##Terraform part
+## Terraform part
 
 Watch out, and you need sane defaults for this block, in my case for testing, is OK to some application unavailability
 
