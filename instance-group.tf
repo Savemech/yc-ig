@@ -4,6 +4,7 @@ resource "random_id" "getrandom" {
 resource "yandex_iam_service_account" "appname-ig-sa" {
   name        = "appname-ig-sa"
   description = "service account to manage appname_ig"
+  depends_on  = ["yandex_vpc_subnet.subnet"]
 }
 resource "yandex_resourcemanager_folder_iam_binding" "appname-ig-role-iam-binding" {
   folder_id = "${var.folder_id}"
@@ -11,8 +12,7 @@ resource "yandex_resourcemanager_folder_iam_binding" "appname-ig-role-iam-bindin
   members = [
     "serviceAccount:${yandex_iam_service_account.appname-ig-sa.id}",
   ]
-  depends_on = ["yandex_iam_service_account.appname-ig-sa"]
-
+  depends_on = ["yandex_iam_service_account.appname-ig-sa", "yandex_vpc_subnet.subnet"]
 }
 
 variable "cluster_size" {
@@ -51,7 +51,7 @@ resource "yandex_compute_instance_group" "appname-ig" {
       #      skip_update_ssh_keys = true
     }
     metadata = {
-      # foo       = "bar"
+      foo = "bar"
       # ssh-keys  = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
       user-data = "${data.template_file.init.rendered}"
 
@@ -82,7 +82,6 @@ resource "yandex_compute_instance_group" "appname-ig" {
     healthy_threshold   = "5"
     unhealthy_threshold = "5"
     #    tcp_options         = "8080"
-
     http_options {
       port = "8080"
       path = "/"
@@ -95,39 +94,35 @@ resource "yandex_compute_instance_group" "appname-ig" {
     target_group_name = "appname"
   }
 
-
-
-  depends_on = ["yandex_resourcemanager_folder_iam_binding.appname-ig-role-iam-binding", "yandex_iam_service_account.appname-ig-sa"]
+  depends_on = ["yandex_resourcemanager_folder_iam_binding.appname-ig-role-iam-binding", "yandex_iam_service_account.appname-ig-sa", "yandex_vpc_subnet.subnet"]
 }
 
 output "ig-id" {
   value = yandex_compute_instance_group.appname-ig.id
 }
 
-# output "listener-address" {
-#   value = yandex_lb_network_load_balancer.appname-lb.listener
-#   #yandex_lb_network_load_balancer.appname-lb.listener.*.external_address_spec.address
-#   #yandex_lb_network_load_balancer.appname-lb.listener.*.address
-# }
-
-
+output "listener-address" {
+  value = yandex_lb_network_load_balancer.appname-lb.listener.*.external_address_spec
+}
 
 resource "yandex_lb_network_load_balancer" "appname-lb" {
   name = "appname-lb-${lower(random_id.getrandom.hex)}"
-
   listener {
     name = "appname-listener-8080-${lower(random_id.getrandom.hex)}"
     port = 8080
     external_address_spec {
       ip_version = "ipv4"
     }
-
   }
-
-
+  listener {
+    name = "appname-listener-80-${lower(random_id.getrandom.hex)}"
+    port = 80
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+  }
   attached_target_group {
     target_group_id = "${yandex_compute_instance_group.appname-ig.load_balancer.0.target_group_id}"
-
     healthcheck {
       name = "http"
       http_options {
@@ -136,4 +131,6 @@ resource "yandex_lb_network_load_balancer" "appname-lb" {
       }
     }
   }
+  depends_on = ["yandex_compute_instance_group.appname-ig", "yandex_vpc_subnet.subnet"]
 }
+
