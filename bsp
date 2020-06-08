@@ -23,7 +23,9 @@ df -h
 # ls -alhR /etc/apt/ || true
 # ls -alhR ~/.aptitude* || true
 # ls -alhR ~/.aptitude/* || true
-apt-get update && apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y cloud-init
+systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+apt update
+(while true; do apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y cloud-init  && break; done)
 apt-get dist-upgrade -y
 apt-get update
 apt-get install -y curl net-tools wget git htop tmux vim ca-certificates ncdu
